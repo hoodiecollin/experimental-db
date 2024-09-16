@@ -1,0 +1,21 @@
+[package]
+  edition = "2021"
+  name    = "experimental-db-generator"
+  version = "0.1.0"
+
+[dependencies]
+  inflection-rs = "0.2.0"
+  prettyplease = "0.2.22"
+  proc-macro2 = { version = "1.0.86", default-features = false, features = [] }
+  quote = { version = "1.0.37", default-features = false, features = [] }
+  serde = { version = "1.0.209", features = ["alloc", "derive"] }
+  serde_json = { version = "1.0.127", features = ["alloc", "preserve_order"] }
+  syn = { version = "2.0.76", default-features = false, features = [
+    "clone-impls",
+    "extra-traits",
+    "full",
+    "parsing",
+    "printing",
+    "visit",
+    "visit-mut",
+  ] }

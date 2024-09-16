@@ -1,0 +1,23 @@
+{
+  "files.associations": {
+    ".prototools": "toml",
+    ".czrs": "json"
+  },
+  "cSpell.words": [
+    "bumpalo",
+    "bunx",
+    "commitlint",
+    "conventionalcommits",
+    "durinsbane",
+    "flexbuffers",
+    "graphmap",
+    "hashbrown",
+    "idents",
+    "petgraph",
+    "prettyplease",
+    "titleize",
+    "unparse"
+  ],
+  "editor.indentSize": "tabSize",
+  "editor.tabSize": 4
+}
