@@ -1,100 +1,118 @@
-use std::{
-    alloc::{alloc, GlobalAlloc, Layout, System},
-    mem::MaybeUninit,
-    ptr::NonNull,
-    sync::Arc,
-};
+use std::{path::PathBuf, sync::LazyLock};
 
-use hashbrown::{HashMap, HashSet};
-use memmap2::MmapMut;
-use parking_lot::RwLock;
 use petgraph::prelude::UnGraphMap;
-use serde::{Deserialize, Serialize};
 
-pub type Id = u32;
+pub mod book;
+pub mod book_inner;
+pub mod page;
+pub mod page_entry;
+pub mod page_inner;
+pub mod page_layout;
+pub mod page_meta;
 
-pub fn new_id() -> Id {
-    rand::random()
+#[cfg(test)]
+mod tests;
+
+#[repr(transparent)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Idx {
+    pub val: u32,
 }
 
-pub type Relationships<T> = UnGraphMap<Id, T>;
+impl Idx {
+    #[inline]
+    pub fn new(val: u32) -> Self {
+        Self { val }
+    }
 
-type ValuePtr<T> = NonNull<MaybeUninit<T>>;
-
-pub struct Value<T> {
-    arc: Arc<RwLock<ValuePtr<T>>>,
+    #[inline]
+    pub fn as_usize(&self) -> usize {
+        self.val as usize
+    }
 }
 
-impl Value<T> {
-    pub fn new(value: *mut MaybeUninit<T>) -> Self {
-        Value {
-            arc: Arc::new(RwLock::new(NonNull::new(value).unwrap())),
+impl std::fmt::Debug for Idx {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Idx({})", self.val)
+    }
+}
+
+impl std::fmt::Display for Idx {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.val)
+    }
+}
+
+#[repr(transparent)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Key {
+    pub val: u32,
+}
+
+impl Key {
+    #[inline]
+    pub fn new(val: u32) -> Self {
+        Self { val }
+    }
+
+    #[inline]
+    pub fn rand() -> Self {
+        Self {
+            val: rand::random(),
         }
     }
 }
 
-impl<T> Clone for Value<T> {
-    fn clone(&self) -> Self {
-        Value {
-            arc: Arc::clone(&self.arc),
+impl std::fmt::Debug for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Key({:#010x})", self.val)
+    }
+}
+
+impl std::fmt::Display for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#010x}", self.val)
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum IdxOrKey {
+    Idx(Idx),
+    Key(Key),
+}
+
+impl std::fmt::Debug for IdxOrKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IdxOrKey::Idx(idx) => write!(f, "IdxOrKey::Idx({})", idx.val),
+            IdxOrKey::Key(key) => write!(f, "IdxOrKey::Key({:#010x})", key.val),
         }
     }
 }
 
-impl<T> std::ops::Deref for Value<T> {
-    type Target = Arc<RwLock<ValuePtr<T>>>;
+pub type Relationships<T> = UnGraphMap<Key, T>;
 
-    fn deref(&self) -> &Self::Target {
-        &self.arc
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct BookId {
+    pub val: u64,
+}
+
+impl BookId {
+    #[inline]
+    pub fn new(val: u64) -> Self {
+        Self { val }
     }
-}
 
-impl<T> std::ops::DerefMut for Value<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.arc
-    }
-}
-
-impl<T> AsRef<Arc<RwLock<ValuePtr<T>>>> for Value<T> {
-    fn as_ref(&self) -> &Arc<RwLock<ValuePtr<T>>> {
-        &self.arc
-    }
-}
-
-impl<T> AsMut<Arc<RwLock<ValuePtr<T>>>> for Value<T> {
-    fn as_mut(&mut self) -> &mut Arc<RwLock<ValuePtr<T>>> {
-        &mut self.arc
-    }
-}
-
-#[derive(Debug)]
-pub struct KvPairs<T> {
-    map: HashMap<Id, Value<T>>,
-}
-
-impl<T> KvPairs<T> {
-    pub fn new() -> Self {
-        KvPairs {
-            map: HashMap::new(),
+    #[inline]
+    pub fn rand() -> Self {
+        Self {
+            val: rand::random(),
         }
     }
-
-    pub fn insert(&mut self, key: Id, val: T) {
-        self.map.insert(key, val);
-    }
-
-    pub fn remove(&mut self, key: Id) {
-        self.map.remove(&key);
-    }
-
-    pub fn get(&self, key: Id) -> Option<&T> {
-        self.map.get(&key)
-    }
 }
 
-#[macro_export]
-macro_rules! optional {
-    ($name:expr) => {
-        Some(($name).into())
-    };
-}
+pub static DATA_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
+    let home = dirs::home_dir().expect("No home directory found");
+    home.join(".experimental-db")
+});

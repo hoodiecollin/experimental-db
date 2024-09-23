@@ -1,5 +1,5 @@
 bun = "latest"
-rust = "stable"
+rust = "nightly"
 
 [settings]
 auto-install = true

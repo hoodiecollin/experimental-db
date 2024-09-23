@@ -1,5 +1,3 @@
 [workspace]
-members = [
-  "core",
-  "generator",
-]
+  members  = ["core", "generator"]
+  resolver = "2"

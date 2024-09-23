@@ -180,3 +180,6 @@ dist
 
 # cargo 
 target/
+
+# local
+.tmp/
